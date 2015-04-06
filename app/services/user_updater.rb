@@ -19,11 +19,6 @@ class UserUpdater
     :edit_history_public
   ]
 
-  PROFILE_ATTR = [
-    :location,
-    :dismissed_banner_key
-  ]
-
   def initialize(actor, user)
     @user = user
     @guardian = Guardian.new(actor)
