@@ -222,7 +222,7 @@ SQL
   end
 
   def publish_categories_list
-    MessageBus.publish('/categories', {categories: ActiveModel::ArraySerializer.new(Category.latest).as_json})
+    DiscourseBus.publish('/categories', {categories: ActiveModel::ArraySerializer.new(Category.latest).as_json})
   end
 
   def parent_category_validator
@@ -373,7 +373,7 @@ SQL
   def url
     url = @@url_cache[self.id]
     unless url
-      url = "/c"
+      url = "#{Discourse.base_uri}/c"
       url << "/#{parent_category.slug}" if parent_category_id
       url << "/#{slug}"
       url.freeze

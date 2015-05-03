@@ -258,7 +258,7 @@ module BackupRestore
       end
 
       log "Gzipping archive..."
-      `gzip --best #{tar_filename}`
+      `gzip #{tar_filename}`
     end
 
     def after_create_hook
@@ -336,7 +336,7 @@ module BackupRestore
     def publish_log(message, timestamp)
       return unless @publish_to_message_bus
       data = { timestamp: timestamp, operation: "backup", message: message }
-      MessageBus.publish(BackupRestore::LOGS_CHANNEL, data, user_ids: [@user_id])
+      DiscourseBus.publish(BackupRestore::LOGS_CHANNEL, data, user_ids: [@user_id])
     end
 
     def save_log(message, timestamp)

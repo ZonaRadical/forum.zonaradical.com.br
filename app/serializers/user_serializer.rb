@@ -1,6 +1,7 @@
 class UserSerializer < BasicUserSerializer
 
-  attr_accessor :omit_stats
+  attr_accessor :omit_stats,
+                :topic_post_count
 
   def self.staff_attributes(*attrs)
     attributes(*attrs)
@@ -62,7 +63,9 @@ class UserSerializer < BasicUserSerializer
              :has_title_badges,
              :edit_history_public,
              :custom_fields,
-             :user_fields
+             :user_fields,
+             :topic_post_count,
+             :pending_count
 
   has_one :invited_by, embed: :object, serializer: BasicUserSerializer
   has_many :custom_groups, embed: :object, serializer: BasicGroupSerializer
@@ -95,7 +98,8 @@ class UserSerializer < BasicUserSerializer
                      :custom_avatar_upload_id,
                      :has_title_badges,
                      :card_image_badge,
-                     :card_image_badge_id
+                     :card_image_badge_id,
+                     :muted_usernames
 
   untrusted_attributes :bio_raw,
                        :bio_cooked,
@@ -252,6 +256,10 @@ class UserSerializer < BasicUserSerializer
     CategoryUser.lookup(object, :watching).pluck(:category_id)
   end
 
+  def muted_usernames
+    MutedUser.where(user_id: object.id).joins(:muted_user).pluck(:username)
+  end
+
   def include_private_message_stats?
     can_edit && !(omit_stats == true)
   end
@@ -288,6 +296,10 @@ class UserSerializer < BasicUserSerializer
     user_fields.present?
   end
 
+  def include_topic_post_count?
+    topic_post_count.present?
+  end
+
   def custom_fields
     fields = nil
 
@@ -300,5 +312,9 @@ class UserSerializer < BasicUserSerializer
     else
       {}
     end
+  end
+
+  def pending_count
+    0
   end
 end

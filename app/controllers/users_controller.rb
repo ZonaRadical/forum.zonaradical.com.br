@@ -6,7 +6,7 @@ require_dependency 'rate_limiter'
 class UsersController < ApplicationController
 
   skip_before_filter :authorize_mini_profiler, only: [:avatar]
-  skip_before_filter :check_xhr, only: [:show, :password_reset, :update, :account_created, :activate_account, :perform_account_activation, :authorize_email, :user_preferences_redirect, :avatar, :my_redirect]
+  skip_before_filter :check_xhr, only: [:show, :password_reset, :update, :account_created, :activate_account, :perform_account_activation, :authorize_email, :user_preferences_redirect, :avatar, :my_redirect, :toggle_anon, :admin_login]
 
   before_filter :ensure_logged_in, only: [:username, :update, :change_email, :user_preferences_redirect, :upload_user_image, :pick_avatar, :destroy_user_image, :destroy, :check_emails]
   before_filter :respond_to_suspicious_request, only: [:create]
@@ -23,7 +23,8 @@ class UsersController < ApplicationController
                                                             :perform_account_activation,
                                                             :send_activation_email,
                                                             :authorize_email,
-                                                            :password_reset]
+                                                            :password_reset,
+                                                            :admin_login]
 
   def index
   end
@@ -34,6 +35,11 @@ class UsersController < ApplicationController
     if params[:stats].to_s == "false"
       user_serializer.omit_stats = true
     end
+    topic_id = params[:include_post_count_for].to_i
+    if topic_id != 0
+      user_serializer.topic_post_count = {topic_id => Post.where(topic_id: topic_id, user_id: @user.id).count }
+    end
+
     respond_to do |format|
       format.html do
         @restrict_fields = guardian.restrict_user_fields?(@user)
@@ -316,6 +322,7 @@ class UsersController < ApplicationController
       else
         @user.password = params[:password]
         @user.password_required!
+        @user.auth_token = nil
         if @user.save
           Invite.invalidate_for_email(@user.email) # invite link can't be used to log in anymore
           logon_after_password_reset
@@ -336,6 +343,58 @@ class UsersController < ApplicationController
               end
 
     @success = I18n.t(message)
+  end
+
+  def admin_login
+
+    unless SiteSetting.enable_sso && !current_user
+      return redirect_to path("/")
+    end
+
+    if request.put?
+      RateLimiter.new(nil, "admin-login-hr-#{request.remote_ip}", 6, 1.hour).performed!
+      RateLimiter.new(nil, "admin-login-min-#{request.remote_ip}", 3, 1.minute).performed!
+
+      user = User.where(email: params[:email], admin: true).where.not(id: Discourse::SYSTEM_USER_ID).first
+      if user
+        email_token = user.email_tokens.create(email: user.email)
+        Jobs.enqueue(:user_email, type: :admin_login, user_id: user.id, email_token: email_token.token)
+        @message = I18n.t("admin_login.success")
+      else
+        @message = I18n.t("admin_login.error")
+      end
+    elsif params[:token].present?
+      # token recieved, try to login
+      if EmailToken.valid_token_format?(params[:token])
+        @user = EmailToken.confirm(params[:token])
+        if @user && @user.admin?
+          # Log in user
+          log_on_user(@user)
+          return redirect_to path("/")
+        else
+          @message = I18n.t("admin_login.error")
+        end
+      else
+        @message = I18n.t("admin_login.error")
+      end
+    end
+
+    render layout: false
+  rescue RateLimiter::LimitExceeded
+    @message = I18n.t("rate_limiter.slow_down")
+    render layout: false
+  end
+
+  def toggle_anon
+    user = AnonymousShadowCreator.get_master(current_user) ||
+           AnonymousShadowCreator.get(current_user)
+
+    if user
+      log_on_user(user)
+      render json: success_json
+    else
+      render json: failed_json, status: 403
+    end
   end
 
   def change_email
@@ -428,8 +487,9 @@ class UsersController < ApplicationController
     term = params[:term].to_s.strip
     topic_id = params[:topic_id]
     topic_id = topic_id.to_i if topic_id
+    topic_allowed_users = params[:topic_allowed_users] || false
 
-    results = UserSearch.new(term, topic_id: topic_id, searching_user: current_user).search
+    results = UserSearch.new(term, topic_id: topic_id, topic_allowed_users: topic_allowed_users, searching_user: current_user).search
 
     user_fields = [:username, :upload_avatar_template, :uploaded_avatar_id]
     user_fields << :name if SiteSetting.enable_names?
@@ -600,17 +660,12 @@ class UsersController < ApplicationController
       return false if is_api?
 
       params[:password_confirmation] != honeypot_value ||
-        params[:challenge] != challenge_value.try(:reverse)
+      params[:challenge] != challenge_value.try(:reverse)
     end
 
     def user_params
-      params.permit(
-        :name,
-        :email,
-        :password,
-        :username,
-        :active
-      ).merge(ip_address: request.ip, registration_ip_address: request.ip)
+      params.permit(:name, :email, :password, :username, :active)
+            .merge(ip_address: request.remote_ip, registration_ip_address: request.remote_ip)
     end
 
     def fail_with(key)

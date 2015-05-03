@@ -2,6 +2,7 @@ import userSearch from 'discourse/lib/user-search';
 import afterTransition from 'discourse/lib/after-transition';
 import loadScript from 'discourse/lib/load-script';
 import avatarTemplate from 'discourse/lib/avatar-template';
+import positioningWorkaround from 'discourse/lib/safari-hacks';
 
 const ComposerView = Discourse.View.extend(Ember.Evented, {
   _lastKeyTimeout: null,
@@ -122,6 +123,8 @@ const ComposerView = Discourse.View.extend(Ember.Evented, {
     afterTransition($replyControl, this.resize.bind(self));
     this.ensureMaximumDimensionForImagesInPreview();
     this.set('controller.view', this);
+
+    positioningWorkaround(this.$());
   }.on('didInsertElement'),
 
   _unlinkView: function() {
@@ -231,12 +234,8 @@ const ComposerView = Discourse.View.extend(Ember.Evented, {
       },
       key: "@",
       transformComplete(v) {
-          if (v.username) {
-            return v.username;
-          } else {
-            return v.usernames.join(", @");
-          }
-        }
+        return v.username ? v.username : v.usernames.join(", @");
+      }
     });
 
     this.editor = editor = Discourse.Markdown.createEditor({
@@ -516,19 +515,25 @@ const ComposerView = Discourse.View.extend(Ember.Evented, {
   },
 
   childDidInsertElement() {
-    return this.initEditor();
+    this.initEditor();
+
+    // Disable links in the preview
+    $('#wmd-preview').on('click.preview', (e) => {
+      e.preventDefault();
+      return false;
+    });
   },
 
   childWillDestroyElement() {
-    const self = this;
-
     this._unbindUploadTarget();
 
-    Em.run.next(function() {
+    $('#wmd-preview').off('click.preview');
+
+    Em.run.next(() => {
       $('#main-outlet').css('padding-bottom', 0);
       // need to wait a bit for the "slide down" transition of the composer
-      Em.run.later(function() {
-        self.appEvents.trigger("composer:closed");
+      Em.run.later(() => {
+        this.appEvents.trigger("composer:closed");
       }, 400);
     });
   },
@@ -564,6 +569,10 @@ const ComposerView = Discourse.View.extend(Ember.Evented, {
       reason = I18n.t('composer.error.post_missing');
     } else if( missingChars > 0 ) {
       reason = I18n.t('composer.error.post_length', {min: this.get('model.minimumPostLength')});
+      let tl = Discourse.User.currentProp("trust_level");
+      if (tl === 0 || tl === 1) {
+        reason += "<br/>" + I18n.t('composer.error.try_like');
+      }
     }
 
     if( reason ) {

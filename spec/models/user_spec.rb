@@ -105,13 +105,15 @@ describe User do
       @post3 = Fabricate(:post, user: @user)
       @posts = [@post1, @post2, @post3]
       @guardian = Guardian.new(Fabricate(:admin))
+      @queued_post = Fabricate(:queued_post, user: @user)
     end
 
     it 'allows moderator to delete all posts' do
       @user.delete_all_posts!(@guardian)
       expect(Post.where(id: @posts.map(&:id))).to be_empty
+      expect(QueuedPost.where(user_id: @user.id).count).to eq(0)
       @posts.each do |p|
-        if p.post_number == 1
+        if p.is_first_post?
           expect(Topic.find_by(id: p.topic_id)).to be_nil
         end
       end
@@ -722,21 +724,17 @@ describe User do
 
   end
 
-  describe "#added_a_day_ago?" do
-    context "when user is more than a day old" do
-      subject(:user) { Fabricate(:user, created_at: Date.today - 2.days) }
+  describe "#first_day_user?" do
 
-      it "returns false" do
-        expect(user).to_not be_added_a_day_ago
-      end
+    def test_user?(opts={})
+      Fabricate.build(:user, {created_at: Time.now}.merge(opts)).first_day_user?
     end
 
-    context "is less than a day old" do
-      subject(:user) { Fabricate(:user) }
-
-      it "returns true" do
-        expect(user).to be_added_a_day_ago
-      end
+    it "works" do
+      expect(test_user?).to eq(true)
+      expect(test_user?(moderator: true)).to eq(false)
+      expect(test_user?(trust_level: TrustLevel[2])).to eq(false)
+      expect(test_user?(created_at: 2.days.ago)).to eq(false)
     end
   end
 
@@ -864,7 +862,7 @@ describe User do
     let(:user) { build(:user, username: 'Sam') }
 
     it "returns a 45-pixel-wide avatar" do
-      expect(user.small_avatar_url).to eq("//test.localhost/letter_avatar/sam/45/#{LetterAvatar::VERSION}.png")
+      expect(user.small_avatar_url).to eq("//test.localhost/letter_avatar/sam/45/#{LetterAvatar.version}.png")
     end
 
   end
@@ -1041,7 +1039,7 @@ describe User do
       u = User.create!(username: "bob", email: "bob@bob.com")
       u.reload
       expect(u.uploaded_avatar_id).to eq(nil)
-      expect(u.avatar_template).to eq("/letter_avatar/bob/{size}/#{LetterAvatar::VERSION}.png")
+      expect(u.avatar_template).to eq("/letter_avatar/bob/{size}/#{LetterAvatar.version}.png")
     end
   end
 
@@ -1178,6 +1176,27 @@ describe User do
       expect(user.number_of_deleted_posts).to eq(2)
     end
 
+  end
+
+  describe "new_user?" do
+    it "correctly detects new user" do
+      user = User.new(created_at: Time.now, trust_level: TrustLevel[0])
+
+      expect(user.new_user?).to eq(true)
+
+      user.trust_level = TrustLevel[1]
+
+      expect(user.new_user?).to eq(true)
+
+      user.trust_level = TrustLevel[2]
+
+      expect(user.new_user?).to eq(false)
+
+      user.trust_level = TrustLevel[0]
+      user.moderator = true
+
+      expect(user.new_user?).to eq(false)
+    end
   end
 
 end
