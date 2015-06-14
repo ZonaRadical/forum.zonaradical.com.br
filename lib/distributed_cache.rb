@@ -26,6 +26,7 @@ class DistributedCache
 
         next if payload["origin"] == current.identity
         next if current.key != payload["hash_key"]
+        next if payload["discourse_version"] != Discourse.git_version
 
         hash = current.hash(message.site_id)
 
@@ -51,7 +52,7 @@ class DistributedCache
     return if @subscribed
     @lock.synchronize do
       return if @subscribed
-      DiscourseBus.subscribe(channel_name) do |message|
+      MessageBus.subscribe(channel_name) do |message|
         @lock.synchronize do
           process_message(message)
         end
@@ -63,7 +64,8 @@ class DistributedCache
   def self.publish(hash, message)
     message[:origin] = hash.identity
     message[:hash_key] = hash.key
-    DiscourseBus.publish(channel_name, message, { user_ids: [-1] })
+    message[:discourse_version] = Discourse.git_version
+    MessageBus.publish(channel_name, message, { user_ids: [-1] })
   end
 
   def self.set(hash, key, value)

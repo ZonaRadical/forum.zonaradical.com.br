@@ -27,6 +27,9 @@ cs:
       invalid_boolean: "Nevalidní boolean."
       taken: "už je zabráno"
       accepted: musí být odsouhlasen
+      blank: nemůže zůstat prázdné
+      present: musí zůstat prázdné
+      confirmation: "neodpovídá %{attribute}"
       empty: nemůže být prázdný
       equal_to: musí být roven %{count}
       even: musí být sudý
@@ -41,6 +44,20 @@ cs:
       not_an_integer: musí být celé číslo
       odd: musí být lichý
       record_invalid: 'Ověření selhalo: %{errors}'
+      restrict_dependent_destroy:
+        many: "Nemůžu smazat záznam protože na něm závisí %{record}."
+      too_long:
+        one: je příliš dlouhý ( maximálně %{count} znak)
+        few: je to příliš dlouhé (maximálně %{count} znaků)
+        other: je to příliš dlouhé (maximálně %{count} znaků)
+      too_short:
+        one: je to příliš krátké (minimum je %{count} znak)
+        few: je to příliš krátké (minimum je %{count} znaků)
+        other: je to příliš krátké (minimum je %{count} znaků)
+      wrong_length:
+        one: špatná délka (má být %{count} znak)
+        few: špatná délka (má být %{count} znaků)
+        other: špatná délka (má být %{count} znaků)
       other_than: "musí být jiný než %{count}"
     template:
       body: 'Nastaly problémy s následujícími poli: '
@@ -53,6 +70,7 @@ cs:
     backup_file_should_be_tar_gz: "Záloha by měla být archiv s příponou .tar.gz."
     not_enough_space_on_disk: "Na disku není dostatek místa pro nahrání této zálohy."
   not_logged_in: "Na tuto akci musíte být přihlášení."
+  not_found: "Žádaná URL adresa nebo zdroj nelze najít."
   read_only_mode_enabled: "Tato stránka je v režimu jen pro čtení. Interakce jsou zakázány."
   too_many_replies:
     one: "Je nám líto, ale noví uživatelé jsou dočasně omezeni na 1 odpověď v tématu."
@@ -102,6 +120,7 @@ cs:
   next_page: "další strana →"
   prev_page: "← předchozí strana"
   page_num: "Strana %{num}"
+  home_title: "Domů"
   topics_in_category: "Témata v kategorii '%{category}'"
   rss_posts_in_topic: "RSS feed tématu '%{topic}'"
   rss_topics_in_category: "RSS feed témat z kategorie '%{category}'"
@@ -349,7 +368,6 @@ cs:
         few: "téměř před %{count} roky"
         other: "téměř před %{count} roky"
   password_reset:
-    no_token: "Bohužel, platnost tohoto odkazu vypršela. Zkuste si, prosím, resetovat heslo znovu."
     choose_new: "Zvolte si nové heslo"
     choose: "Zvolte si prosím heslo"
     update: 'změnit heslo'
@@ -520,6 +538,7 @@ cs:
       xaxis: "Den"
       yaxis: "Anonymní API požadavky"
     page_view_logged_in_reqs:
+      title: "Přihlášen"
       xaxis: "Den"
     page_view_crawler_reqs:
       xaxis: "Den"
@@ -592,6 +611,7 @@ cs:
       description: "HTML přidané na vršek každé stránky (za hlavičku, ale před navigaci a před název tématu)."
     bottom:
       title: "Patička stránky"
+      description: "HTML, které bude přidáno před tag </body>"
   site_settings:
     default_locale: "Výchozí jazyk této Discourse instance (kód ve formátu ISO 639-1)"
     allow_user_locale: "Povolit uživatelům nastavit si jazyk fóra"
@@ -600,7 +620,6 @@ cs:
     unique_posts_mins: "Kolik minut musí uplynout, než může uživatel zaslat příspěvek se stejným obsahem"
     queue_jobs: "Zařazovat úlohy do fronty v sidekiq, není-li nastaveno, jsou úlohy vyřizovány okamžitě"
     category_featured_topics: "Počet témat zobrazených v seznamu kategorií"
-    exclude_rel_nofollow_domains: "Seznam domén, kam se nebude přidávat 'nofollow', oddělený čárkou (tld.com automaticky povolí i sub.tld.com)"
     favicon_url: "Favicona vašeho webu, viz http://en.wikipedia.org/wiki/Favicon"
     apple_touch_icon_url: "Ikona používaná pro doteková zařízení od firmy Apple. Doporučené rozměry jsou 144px krát 144px."
     email_custom_headers: "Seznam vlastních hlaviček emailů, oddělený svislítkem"
@@ -716,7 +735,6 @@ cs:
     active: "Váš účet je aktivní a připraven k používání."
     not_activated: "Ještě se nemůžete přihlásit. Zaslali jsme vám aktivační email na <b>%{email}</b>. Prosím následujte instrukce v tomto emailu a aktivujte si tak svůj účet."
     suspended: "Máte zakázáno přihlášení až do %{date}."
-    suspended_with_reason: "You can't log in until %{date}. The reason you were suspended: %{reason}"
     errors: "%{errors}"
     not_available: "Není k dispozici. Nechcete zkusit %{suggestion}?"
     something_already_taken: "Nastala chyba při zpracování, zřejmě je dané uživatelské jméno nebo email již zaregistrován. Zkuste odkaz pro obnovení hesla."
@@ -730,14 +748,6 @@ cs:
     email:
       not_allowed: "není povolen od tohoto emailového poskytovatele. Prosím použijte jinou emailovou adresu."
       blocked: "není povolen."
-    ip_address:
-      blocked: "is blocked."
-  invite_password_instructions:
-    text_body_template: |
-      Díky za potvrzení pozvánky na %{site_name} - vítejte!
-
-      Pro další přihlášení, klikněte na následující odkaz a nastavte si heslo:
-      %{base_url}/users/password-reset/%{email_token}
   test_mailer:
     subject_template: "[%{site_name}] Zkušební email"
   new_version_mailer:
@@ -842,10 +852,6 @@ cs:
       click_here: "klikněte zde"
       from: "souhrn z %{site_name}"
       read_more: "Číst dále"
-      posts:
-        one: "Je zobrazen pouze 1 příspěvek"
-        few: "Jsou zobrazeny pouze {{count}} příspěvky"
-        other: "Je zobrazeno pouze {{count}} příspěvků"
     forgot_password:
       subject_template: "[%{site_name}] Obnovení hesla"
       text_body_template: |

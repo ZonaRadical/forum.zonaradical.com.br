@@ -78,6 +78,21 @@ module Discourse
     @anonymous_top_menu_items ||= Discourse.anonymous_filters + [:category, :categories, :top]
   end
 
+  PIXEL_RATIOS ||= [1, 2, 3]
+
+  def self.avatar_sizes
+    # TODO: should cache these when we get a notification system for site settings
+    set = Set.new
+
+    SiteSetting.avatar_sizes.split("|").map(&:to_i).each do |size|
+      PIXEL_RATIOS.each do |pixel_ratio|
+        set << size * pixel_ratio
+      end
+    end
+
+    set
+  end
+
   def self.activate_plugins!
     all_plugins = Plugin::Instance.find_all("#{Rails.root}/plugins")
 
@@ -119,10 +134,10 @@ module Discourse
       digest = Digest::MD5.hexdigest(ActionView::Base.assets_manifest.assets.values.sort.join)
 
       channel = "/global/asset-version"
-      message = DiscourseBus.last_message(channel)
+      message = MessageBus.last_message(channel)
 
       unless message && message.data == digest
-        DiscourseBus.publish channel, digest
+        MessageBus.publish channel, digest
       end
       digest
     end
@@ -193,7 +208,7 @@ module Discourse
 
   def self.enable_readonly_mode
     $redis.set(readonly_mode_key, 1)
-    DiscourseBus.publish(readonly_channel, true)
+    MessageBus.publish(readonly_channel, true)
     keep_readonly_mode
     true
   end
@@ -210,7 +225,7 @@ module Discourse
 
   def self.disable_readonly_mode
     $redis.del(readonly_mode_key)
-    DiscourseBus.publish(readonly_channel, false)
+    MessageBus.publish(readonly_channel, false)
     true
   end
 
@@ -221,9 +236,9 @@ module Discourse
   def self.request_refresh!
     # Causes refresh on next click for all clients
     #
-    # This is better than `DiscourseBus.publish "/file-change", ["refresh"]` because
+    # This is better than `MessageBus.publish "/file-change", ["refresh"]` because
     # it spreads the refreshes out over a time period
-    DiscourseBus.publish '/global/asset-version', 'clobber'
+    MessageBus.publish '/global/asset-version', 'clobber'
   end
 
   def self.git_version
@@ -236,7 +251,7 @@ module Discourse
     begin
       $git_version ||= `git rev-parse HEAD`.strip
     rescue
-      $git_version = "unknown"
+      $git_version = Discourse::VERSION::STRING
     end
   end
 
@@ -256,7 +271,7 @@ module Discourse
     user ||= User.admins.real.order(:id).first
   end
 
-  SYSTEM_USER_ID = -1 unless defined? SYSTEM_USER_ID
+  SYSTEM_USER_ID ||= -1
 
   def self.system_user
     User.find_by(id: SYSTEM_USER_ID)
@@ -296,9 +311,10 @@ module Discourse
   # after fork, otherwise Discourse will be
   # in a bad state
   def self.after_fork
+    # note: all this reconnecting may no longer be needed per https://github.com/redis/redis-rb/pull/414
     current_db = RailsMultisite::ConnectionManagement.current_db
     RailsMultisite::ConnectionManagement.establish_connection(db: current_db)
-    DiscourseBus.after_fork
+    MessageBus.after_fork
     SiteSetting.after_fork
     $redis.client.reconnect
     Rails.cache.reconnect

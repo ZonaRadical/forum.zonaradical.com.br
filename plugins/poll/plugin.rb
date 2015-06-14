@@ -4,7 +4,10 @@
 # authors: Vikhyat Korrapati (vikhyat), Régis Hanol (zogstrip)
 # url: https://github.com/discourse/discourse/tree/master/plugins/poll
 
-register_asset "stylesheets/poll.scss"
+register_asset "stylesheets/common/poll.scss"
+register_asset "stylesheets/desktop/poll.scss", :desktop
+register_asset "stylesheets/mobile/poll.scss", :mobile
+
 register_asset "javascripts/poll_dialect.js", :server_side
 
 PLUGIN_NAME ||= "discourse_poll".freeze
@@ -33,6 +36,11 @@ after_initialize do
         DistributedMutex.synchronize("#{PLUGIN_NAME}-#{post_id}") do
           post = Post.find_by(id: post_id)
 
+          # post must not be deleted
+          if post.nil? || post.trashed?
+            raise StandardError.new I18n.t("poll.post_is_deleted")
+          end
+
           # topic must be open
           if post.topic.try(:closed) || post.topic.try(:archived)
             raise StandardError.new I18n.t("poll.topic_must_be_open_to_vote")
@@ -57,7 +65,7 @@ after_initialize do
           vote = votes[poll_name] || []
 
           # increment counters only when the user hasn't casted a vote yet
-          poll["total_votes"] += 1 if vote.size == 0
+          poll["voters"] += 1 if vote.size == 0
 
           poll["options"].each do |option|
             option["votes"] -= 1 if vote.include?(option["id"])
@@ -70,7 +78,7 @@ after_initialize do
           post.custom_fields["#{VOTES_CUSTOM_FIELD}-#{user_id}"] = votes
           post.save_custom_fields(true)
 
-          DiscourseBus.publish("/polls/#{post_id}", { polls: polls })
+          MessageBus.publish("/polls/#{post_id}", { polls: polls })
 
           return [poll, options]
         end
@@ -79,16 +87,22 @@ after_initialize do
       def toggle_status(post_id, poll_name, status, user_id)
         DistributedMutex.synchronize("#{PLUGIN_NAME}-#{post_id}") do
           post = Post.find_by(id: post_id)
-          user = User.find_by(id: user_id)
 
-          # either staff member or OP
-          unless user_id == post.user_id || user.try(:staff?)
-            raise StandardError.new I18n.t("poll.only_staff_or_op_can_toggle_status")
+          # post must not be deleted
+          if post.nil? || post.trashed?
+            raise StandardError.new I18n.t("poll.post_is_deleted")
           end
 
           # topic must be open
           if post.topic.try(:closed) || post.topic.try(:archived)
             raise StandardError.new I18n.t("poll.topic_must_be_open_to_toggle_status")
+          end
+
+          user = User.find_by(id: user_id)
+
+          # either staff member or OP
+          unless user_id == post.user_id || user.try(:staff?)
+            raise StandardError.new I18n.t("poll.only_staff_or_op_can_toggle_status")
           end
 
           polls = post.custom_fields[POLLS_CUSTOM_FIELD]
@@ -100,7 +114,7 @@ after_initialize do
 
           post.save_custom_fields(true)
 
-          DiscourseBus.publish("/polls/#{post_id}", { polls: polls })
+          MessageBus.publish("/polls/#{post_id}", { polls: polls })
 
           polls[poll_name]
         end
@@ -116,7 +130,7 @@ after_initialize do
 
         # extract polls
         parsed.css("div.poll").each do |p|
-          poll = { "options" => [], "total_votes" => 0 }
+          poll = { "options" => [], "voters" => 0 }
 
           # extract attributes
           p.attributes.values.each do |attribute|
@@ -208,8 +222,9 @@ after_initialize do
     # only care when raw has changed!
     return unless self.raw_changed?
 
-    extracted_polls = DiscoursePoll::Poll::extract(self.raw, self.topic_id)
     polls = {}
+
+    extracted_polls = DiscoursePoll::Poll::extract(self.raw, self.topic_id)
 
     extracted_polls.each do |poll|
       # polls should have a unique name
@@ -244,6 +259,19 @@ after_initialize do
         return
       end
 
+      # poll with multiple choices
+      if poll["type"] == "multiple"
+        min = (poll["min"].presence || 1).to_i
+        max = (poll["max"].presence || poll["options"].size).to_i
+
+        if min > max || max <= 0 || max > poll["options"].size || min >= poll["options"].size
+          poll["name"] == DEFAULT_POLL_NAME ?
+            self.errors.add(:base, I18n.t("poll.default_poll_with_multiple_choices_has_invalid_parameters")) :
+            self.errors.add(:base, I18n.t("poll.named_poll_with_multiple_choices_has_invalid_parameters", name: poll["name"]))
+          return
+         end
+      end
+
       # store the valid poll
       polls[poll["name"]] = poll
     end
@@ -259,10 +287,10 @@ after_initialize do
         if polls.keys != previous_polls.keys ||
            polls.values.map { |p| p["options"] } != previous_polls.values.map { |p| p["options"] }
 
-          # outside the 5-minute edit window?
+          # outside of the 5-minute edit window?
           if post.created_at < 5.minutes.ago
-            # cannot add/remove/change/re-order polls
-            if polls.keys != previous_polls.keys
+            # cannot add/remove/rename polls
+            if polls.keys.sort != previous_polls.keys.sort
               post.errors.add(:base, I18n.t("poll.cannot_change_polls_after_5_minutes"))
               return
             end
@@ -277,18 +305,26 @@ after_initialize do
                 end
               end
             else
-              # OP cannot change polls
-              post.errors.add(:base, I18n.t("poll.cannot_change_polls_after_5_minutes"))
+              # OP cannot edit poll options
+              post.errors.add(:base, I18n.t("poll.op_cannot_edit_options_after_5_minutes"))
               return
             end
           end
 
-          # merge votes when same number of options
+          # try to merge votes
           polls.each_key do |poll_name|
             next unless previous_polls.has_key?(poll_name)
-            next unless polls[poll_name]["options"].size == previous_polls[poll_name]["options"].size
 
-            polls[poll_name]["total_votes"] = previous_polls[poll_name]["total_votes"]
+            # when the # of options has changed, reset all the votes
+            if polls[poll_name]["options"].size != previous_polls[poll_name]["options"].size
+              PostCustomField.where(post_id: post.id)
+                             .where("name LIKE '#{VOTES_CUSTOM_FIELD}-%'")
+                             .destroy_all
+              post.clear_custom_fields
+              next
+            end
+
+            polls[poll_name]["voters"] = previous_polls[poll_name]["voters"]
             for o in 0...polls[poll_name]["options"].size
               polls[poll_name]["options"][o]["votes"] = previous_polls[poll_name]["options"][o]["votes"]
             end
@@ -299,7 +335,7 @@ after_initialize do
           post.save_custom_fields(true)
 
           # publish the changes
-          DiscourseBus.publish("/polls/#{post.id}", { polls: polls })
+          MessageBus.publish("/polls/#{post.id}", { polls: polls })
         end
       end
     else
@@ -321,7 +357,7 @@ after_initialize do
   # tells the front-end we have a poll for that post
   on(:post_created) do |post|
     next if post.is_first_post? || post.custom_fields[POLLS_CUSTOM_FIELD].blank?
-    DiscourseBus.publish("/polls", { post_id: post.id })
+    MessageBus.publish("/polls", { post_id: post.id })
   end
 
   add_to_serializer(:post, :polls, false) { post_custom_fields[POLLS_CUSTOM_FIELD] }

@@ -108,8 +108,15 @@ class User < ActiveRecord::Base
   # set to true to optimize creation and save for imports
   attr_accessor :import_mode
 
-  # excluding fake users like the system user
-  scope :real, -> { where('id > 0') }
+  # excluding fake users like the system user or anonymous users
+  scope :real, -> { where('id > 0').where('NOT EXISTS(
+                     SELECT 1
+                     FROM user_custom_fields ucf
+                     WHERE
+                       ucf.user_id = users.id AND
+                       ucf.name = ? AND
+                       ucf.value::int > 0
+                  )', 'master_id') }
 
   scope :staff, -> { where("admin OR moderator") }
 
@@ -206,7 +213,7 @@ class User < ActiveRecord::Base
   # tricky, we need our bus to be subscribed from the right spot
   def sync_notification_channel_position
     @unread_notifications_by_type = nil
-    self.notification_channel_position = DiscourseBus.last_id("/notification/#{id}")
+    self.notification_channel_position = MessageBus.last_id("/notification/#{id}")
   end
 
   def invited_by
@@ -298,7 +305,7 @@ class User < ActiveRecord::Base
   end
 
   def publish_notifications_state
-    DiscourseBus.publish("/notification/#{id}",
+    MessageBus.publish("/notification/#{id}",
                        {unread_notifications: unread_notifications,
                         unread_private_messages: unread_private_messages,
                         total_unread_notifications: total_unread_notifications},
@@ -366,13 +373,21 @@ class User < ActiveRecord::Base
     create_visit_record!(date) unless visit_record_for(date)
   end
 
-  def update_posts_read!(num_posts, now=Time.zone.now)
+  def update_posts_read!(num_posts, now=Time.zone.now, _retry=false)
     if user_visit = visit_record_for(now.to_date)
       user_visit.posts_read += num_posts
       user_visit.save
       user_visit
     else
-      create_visit_record!(now.to_date, num_posts)
+      begin
+        create_visit_record!(now.to_date, num_posts)
+      rescue ActiveRecord::RecordNotUnique
+        if !_retry
+          update_posts_read!(num_posts, now, _retry=true)
+        else
+          raise
+        end
+      end
     end
   end
 
@@ -413,9 +428,9 @@ class User < ActiveRecord::Base
 
   def self.avatar_template(username,uploaded_avatar_id)
     return letter_avatar_template(username) if !uploaded_avatar_id
-    id = uploaded_avatar_id
     username ||= ""
-    "#{Discourse.base_uri}/user_avatar/#{RailsMultisite::ConnectionManagement.current_hostname}/#{username.downcase}/{size}/#{id}.png"
+    hostname = RailsMultisite::ConnectionManagement.current_hostname
+    UserAvatar.local_avatar_template(hostname, username.downcase, uploaded_avatar_id)
   end
 
   def self.letter_avatar_template(username)
@@ -850,11 +865,13 @@ class User < ActiveRecord::Base
   end
 
   def send_approval_email
-    Jobs.enqueue(:user_email,
-      type: :signup_after_approval,
-      user_id: id,
-      email_token: email_tokens.first.token
-    )
+    if SiteSetting.must_approve_users
+      Jobs.enqueue(:user_email,
+        type: :signup_after_approval,
+        user_id: id,
+        email_token: email_tokens.first.token
+      )
+    end
   end
 
   def set_default_email_digest
@@ -887,7 +904,7 @@ class User < ActiveRecord::Base
     to_destroy.each do |u|
       begin
         destroyer.destroy(u, context: I18n.t(:purge_reason))
-      rescue Discourse::InvalidAccess
+      rescue Discourse::InvalidAccess, UserDestroyer::PostsExistError
         # if for some reason the user can't be deleted, continue on to the next one
       end
     end

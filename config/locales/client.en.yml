@@ -105,8 +105,6 @@ en:
 
     emails_are_disabled: "All outgoing email has been globally disabled by an administrator. No email notifications of any kind will be sent."
 
-    s3_deprecation_warning: "WARNING! Amazon S3 will soon be deprecated for image/attachment storage. Please, follow the <a href='https://meta.discourse.org/t/warning-amazon-s3-is-deprecated-in-1-3-for-image-attachment-storage/26594'>instructions</a> to migrate to local storage."
-
     edit: 'edit the title and category of this topic'
     not_implemented: "That feature hasn't been implemented yet, sorry!"
     no_value: "No"
@@ -375,7 +373,7 @@ en:
       dismiss_notifications: "Mark all as Read"
       dismiss_notifications_tooltip: "Mark all unread notifications as read"
       disable_jump_reply: "Don't jump to my post after I reply"
-      dynamic_favicon: "Show incoming message notifications on favicon (experimental)"
+      dynamic_favicon: "Show new / updated topic count on browser icon"
       edit_history_public: "Let other users view my post revisions"
       external_links_in_new_tab: "Open all external links in a new tab"
       enable_quoting: "Enable quote reply for highlighted text"
@@ -425,6 +423,7 @@ en:
 
       change_about:
         title: "Change About Me"
+        error: "There was an error changing ths value."
 
       change_username:
         title: "Change Username"
@@ -442,6 +441,7 @@ en:
       change_avatar:
         title: "Change your profile picture"
         gravatar: "<a href='//gravatar.com/emails' target='_blank'>Gravatar</a>, based on"
+        gravatar_title: "Change your avatar on Gravatar's website"
         refresh_gravatar_title: "Refresh your Gravatar"
         letter_based: "System assigned profile picture"
         uploaded_avatar: "Custom picture"
@@ -588,6 +588,7 @@ en:
         title: "Registration IP Address"
       avatar:
         title: "Profile Picture"
+        header_title: "profile, messages, bookmarks and preferences"
       title:
         title: "Title"
 
@@ -625,7 +626,7 @@ en:
     read_only_mode:
       enabled: "Read-only mode is enabled. You can continue to browse the site but interactions may not work."
       login_disabled: "Login is disabled while the site is in read only mode."
-    too_few_topics_notice: "Create at least 5 public topics and %{posts} public posts to get discussion started. New users cannot earn trust levels unless there's content for them to read. This message appears only to staff."
+    too_few_topics_notice: "Create at least 5 public topics and %{posts} public replies to get discussion started. New users cannot earn trust levels unless there's content for them to read. This message appears only to staff."
 
     learn_more: "learn more..."
 
@@ -831,25 +832,13 @@ en:
       linked: "<i title='linked post' class='fa fa-arrow-left'></i><p><span>{{username}}</span> {{description}}</p>"
       granted_badge: "<i title='badge granted' class='fa fa-certificate'></i><p>Earned '{{description}}'</p>"
 
-      popup_title:
-        one: "New notification on {{site_title}}"
-        other: "{{count}} new notifications on {{site_title}}"
       popup:
-        mentioned: '{{username}} mentioned you in "{{topic}}"'
-        quoted: '{{username}} quoted you in "{{topic}}"'
-        replied: '{{username}} replied to you in "{{topic}}"'
-        replied_mul: '{{username}} in "{{topic}}"'
-        posted: '{{username}} posted in "{{topic}}"'
-        posted_mul: '{{username}} posted in "{{topic}}"'
-        edited: '{{username}} edited your post in "{{topic}}"'
-        liked: '{{username}} liked your post in "{{topic}}"'
-        private_message: '{{username}} sent you a private message in "{{topic}}"'
-        private_message_mul: '{{username}} in "{{topic}}"'
-        invited_to_private_message: '{{username}} invited you to a private message: "{{topic}}"'
-        invitee_accepted: '{{username}} joined the forum!'
-        moved_post: '{{username}} moved your post in "{{topic}}"'
-        linked: '{{username}} linked to your post from "{{topic}}"'
-        granted_badge: 'You earned the "{{badge}}" badge!'
+        mentioned: '{{username}} mentioned you in "{{topic}}" - {{site_title}}'
+        quoted: '{{username}} quoted you in "{{topic}}" - {{site_title}}'
+        replied: '{{username}} replied to you in "{{topic}}" - {{site_title}}'
+        posted: '{{username}} posted in "{{topic}}" - {{site_title}}'
+        private_message: '{{username}} sent you a private message in "{{topic}}" - {{site_title}}'
+        linked: '{{username}} linked to your post from "{{topic}}" - {{site_title}}'
 
     upload_selector:
       title: "Add an image"
@@ -1008,6 +997,7 @@ en:
         go_top: "top"
         go_bottom: "bottom"
         go: "go"
+        jump_bottom: "jump to last post"
         jump_bottom_with_number: "jump to post %{post_number}"
         total: total posts
         current: current post
@@ -1214,8 +1204,8 @@ en:
         other: "(post withdrawn by author, will be automatically deleted in %{count} hours unless flagged)"
       expand_collapse: "expand/collapse"
       gap:
-        one: "1 post hidden"
-        other: "{{count}} posts hidden"
+        one: "view 1 hidden reply"
+        other: "view {{count}} hidden replies"
       more_links: "{{count}} more..."
 
       unread: "Post is unread"
@@ -1385,7 +1375,7 @@ en:
           last: "Last revision"
           hide: "Hide revision"
           show: "Show revision"
-          comparing_previous_to_current_out_of_total: "<strong>{{previous}}</strong> vs <strong>{{current}}</strong> / {{total}}"
+          comparing_previous_to_current_out_of_total: "<strong>{{previous}}</strong> <i class='fa fa-arrows-h'></i> <strong>{{current}}</strong> / {{total}}"
         displays:
           inline:
             title: "Show the rendered output with additions and removals inline"
@@ -1494,6 +1484,8 @@ en:
 
     topic_map:
       title: "Topic Summary"
+      participants_title: "Frequent Posters"
+      links_title: "Popular Links"
       links_shown: "show all {{totalLinks}} links..."
       clicks:
         one: "1 click"
@@ -1628,7 +1620,7 @@ en:
         this_month: "This month"
         this_week: "This week"
         today: "Today"
-        other_periods: "see more top topics"
+        other_periods: "see top"
 
     browser_update: 'Unfortunately, <a href="http://www.discourse.org/faq/#browser">your browser is too old to work on this site</a>. Please <a href="http://browsehappy.com">upgrade your browser</a>.'
 
@@ -2082,6 +2074,8 @@ en:
       impersonate:
         title: "Impersonate"
         help: "Use this tool to impersonate a user account for debugging purposes. You will have to log out once finished."
+        not_found: "That user can't be found."
+        invalid: "Sorry, you may not impersonate that user."
 
       users:
         title: 'Users'
@@ -2216,8 +2210,6 @@ en:
         suspended_explanation: "A suspended user can't log in."
         block_explanation: "A blocked user can't post or start topics."
         trust_level_change_failed: "There was a problem changing the user's trust level."
-        grant_admin_failed: "There was a problem granting admin privileges."
-        grant_moderation_failed: "There was a problem granting moderation privileges."
         suspend_modal_title: "Suspend User"
         trust_level_2_users: "Trust Level 2 Users"
         trust_level_3_requirements: "Trust Level 3 Requirements"
@@ -2407,12 +2399,13 @@ en:
       title: 'Keyboard Shortcuts'
       jump_to:
         title: 'Jump To'
-        home: '<b>g</b>, <b>h</b> Home (Latest)'
+        home: '<b>g</b>, <b>h</b> Home'
         latest: '<b>g</b>, <b>l</b> Latest'
         new: '<b>g</b>, <b>n</b> New'
         unread: '<b>g</b>, <b>u</b> Unread'
         categories: '<b>g</b>, <b>c</b> Categories'
         top: '<b>g</b>, <b>t</b> Top'
+        bookmarks: '<b>g</b>, <b>b</b> Bookmarks'
       navigation:
         title: 'Navigation'
         jump: '<b>#</b> Go to post #'
@@ -2535,6 +2528,15 @@ en:
         first_flag:
           name: First Flag
           description: Flagged a post
+        promoter:
+          name: Promoter
+          description: Invited a user
+        campaigner:
+          name: Campaigner
+          description: Invited 3 members
+        champion:
+          name: Champion
+          description: Invited 10 members
         first_share:
           name: First Share
           description: Shared a post

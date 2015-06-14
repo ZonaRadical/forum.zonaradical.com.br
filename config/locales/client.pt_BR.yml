@@ -92,7 +92,6 @@ pt_BR:
       email: 'enviar esse link para um email'
     topic_admin_menu: "ações administrativas do tópico"
     emails_are_disabled: "Todo o envio de email foi globalmente desabilitado por algum administrador. Nenhum email de notificações de qualquer tipo será enviado."
-    s3_deprecation_warning: "AVISO! O servço Amazon S3 será em breve descontinuado para armazenamento de imagens e anexos. Por favor, acesse as <a href='https://meta.discourse.org/t/warning-amazon-s3-is-deprecated-in-1-3-for-image-attachment-storage/26594'>instruções<a> para migrar para armazenamento local."
     edit: 'edite o título e a categoria deste tópico'
     not_implemented: "Esse recurso ainda não foi implementado, desculpe!"
     no_value: "Não"
@@ -201,14 +200,23 @@ pt_BR:
       topic: "Tópico:"
       approve: 'Aprovar'
       reject: 'Rejeitar'
+      delete_user: 'Deletar Usuário'
       title: "Aprovação Necessária"
       none: "Não existem mensagens para revisar."
       edit: "Editar"
       cancel: "Cancelar"
+      view_pending: "ver mensagens pendentes"
+      has_pending_posts:
+        one: "Este tópico tem <b>1</b> mensagem aguardando aprovação"
+        many: "Este tópico tem <b>{{count}}</b> mensagens aguardando aprovação"
       confirm: "Salvar Mudanças"
+      delete_prompt: "Você tem certeza que deseja deletar <b>%{username}</b>? Isso irá remover todas as mensagens e irá bloquear o email e endereço IP desse usuário."
       approval:
         title: "Aprovação Necessária da Mensagem"
         description: "Nós recebemos sua nova postagem mas é necessário que seja aprovada por um moderador antes de ser exibida. Por favor tenha paciência."
+        pending_posts:
+          one: "Você tem <strong>1</strong> mensagem pendente."
+          other: "Você tem <strong>{{count}}</strong> mensagens pendentes."
         ok: "OK"
     user_action:
       user_posted_topic: "<a href='{{userUrl}}'>{{user}}</a> postou <a href='{{topicUrl}}'>o tópico</a>"
@@ -325,7 +333,7 @@ pt_BR:
       dismiss_notifications: "Marcar todas como lidas"
       dismiss_notifications_tooltip: "Marcar todas as notificações não lidas como lidos"
       disable_jump_reply: "Não pular para o meu tópico depois que eu respondo"
-      dynamic_favicon: "Exibir notificações de mensagens recebidas no favicon (experimental)"
+      dynamic_favicon: "Exibir ícone no navegador de tópicos novos / atualizados."
       edit_history_public: "Deixar que os outros usuários visualizem minhas revisões na resposta"
       external_links_in_new_tab: "Abrir todos os links externos em uma nova aba"
       enable_quoting: "Ativar resposta citando o texto destacado"
@@ -548,9 +556,9 @@ pt_BR:
     logout: "Você foi desconectado."
     refresh: "Atualizar"
     read_only_mode:
-      enabled: "Um modo somente de leitura. Você pode continuar a navegar no site, mas as interações podem não funcionar."
+      enabled: "O modo somente-leitura está habilitado. Você pode navegador mas as interações podem não funcionar."
       login_disabled: "Login é desativado enquanto o site está em modo de somente leitura."
-    too_few_topics_notice: "Crie pelo menos 5 tópicos públicos e %{posts} posts públicos para inicializar a discussão. Novo usuários não podem ganhar níveis de confiança a menos que exista conteúdo para eles lerem. Esta mensagem aparece apenas para a equipe."
+    too_few_topics_notice: "Crie ao menos 5 tópicos e %{posts} respostas públicas para que a discussão seja iniciada. Novos usuários não poderão obter níveis de confiança ao menos que exista conteúdo para que eles leiam. Esta mensagem é apenas para os moderadores."
     learn_more: "aprenda mais..."
     year: 'ano'
     year_desc: 'tópicos criados nos últimos 365 dias'
@@ -674,7 +682,7 @@ pt_BR:
       title_placeholder: "Sobre o que é esta discussão em uma pequena frase?"
       edit_reason_placeholder: "por que você está editando?"
       show_edit_reason: "(adicione motivo da edição)"
-      reply_placeholder: "Escreva sua resposta aqui. Utilize Markdown ou BBCode para formatar. Arraste ou cole aqui uma imagem para enviar."
+      reply_placeholder: "Escreva aqui. Use Markdown, BBCode ou HTML para formatar. Arraste ou cole uma imagem para carregá-la."
       view_new_post: "Ver sua nova resposta."
       saving: "Salvando..."
       saved: "Salvo!"
@@ -735,6 +743,13 @@ pt_BR:
       moved_post: "<i title='moved post' class='fa fa-sign-out'></i><p><span>{{username}}</span> moved {{description}}</p>"
       linked: "<i title='linked post' class='fa fa-arrow-left'></i><p><span>{{username}}</span> {{description}}</p>"
       granted_badge: "<i title='badge granted' class='fa fa-certificate'></i><p>Adquirido '{{description}}'</p>"
+      popup:
+        mentioned: '{{username}} mencionou você em "{{topic}}" - {{site_title}}'
+        quoted: '{{username}} citou você em "{{topic}}" - {{site_title}}'
+        replied: '{{username}} respondeu para você em "{{topic}}" - {{site_title}}'
+        posted: '{{username}} postou em "{{topic}}" - {{site_title}}'
+        private_message: '{{username}} enviou uma mensagem particular para você em "{{topic}}" - {{site_title}}'
+        linked: '{{username}} linkou o seu post de "{{topic}}" - {{site_title}}'
     upload_selector:
       title: "Adicionar uma imagem"
       title_with_attachments: "Adicionar uma imagem ou arquivo"
@@ -849,7 +864,7 @@ pt_BR:
       toggle_information: "alternar detalhes do tópico"
       read_more_in_category: "Quer ler mais? Procure outros tópicos em {{catLink}} ou {{latestLink}}."
       read_more: "Quer ler mais? {{catLink}} ou {{latestLink}}."
-      read_more_MF: "{ UNREAD, plural, =0 {} one { Há <a href='/unread'>1 não lido</a> } other { Há <a href='/unread'># não lidos</a> } } { NEW, plural, =0 {} one { {BOTH, select, true{and } false {is } other{}} <a href='/new'>1 novo</a> tópico} other { {BOTH, select, true{and } false {are } other{}} <a href='/new'># novos</a> tópicos} } restantes, ou {CATEGORY, select, true {navegue em outros tópicos em {catLink}} false {{latestLink}} other {}}."
+      read_more_MF: "Há { UNREAD, plural, =0 {} one { <a href='/unread'>1 não lido</a> }\tother { are <a href='/unread'># não lidos</a> } } { NEW, plural, =0 {} one { {BOTH, select, true{e } false {} other{}} <a href='/new'>1 novo</a> tópico} other { {BOTH, select, true{e } false {} other{}} <a href='/new'># novos</a> tópicos} } ou {CATEGORY, select, true {veja outros tópicos em {catLink}} false {{latestLink}} other {}}"
       browse_all_categories: Procurar em todas as categorias
       view_latest_topics: ver tópicos mais recentes
       suggest_create_topic: Que tal criar um tópico?
@@ -1052,9 +1067,6 @@ pt_BR:
         one: "(respostas abandonadas pelo autor, serão removidas automaticamente em %{count} hora a exceto se forem sinalizadas)"
         other: "(respostas abandonadas pelo autor, serão removidas automaticamente em %{count} horas a exceto se forem sinalizadas)"
       expand_collapse: "expandir/encolher"
-      gap:
-        one: "1 mensagem oculta"
-        other: "{{count}} mensagens ocultas"
       more_links: "{{count}} mais..."
       unread: "Resposta não lida"
       has_replies:
@@ -1213,7 +1225,6 @@ pt_BR:
           last: "Última revisão"
           hide: "Esconder revisão"
           show: "Exibir revisão"
-          comparing_previous_to_current_out_of_total: "<strong>{{previous}}</strong> vs <strong>{{current}}</strong> / {{total}}"
         displays:
           inline:
             title: "Exibir a saída renderizada com adições e remoções em linha"
@@ -1224,8 +1235,6 @@ pt_BR:
           side_by_side_markdown:
             title: "Mostrar a diferença da fonte crua lado-a-lado"
             button: '<i class="fa fa-columns"></i> Cru'
-        details:
-          edited_by: "Editado por"
     category:
       can: 'pode&hellip; '
       none: '(sem categoria)'
@@ -2005,8 +2014,6 @@ pt_BR:
         suspended_explanation: "Um usuário suspenso não pode entrar."
         block_explanation: "Um usuário bloqueado não pode postar ou iniciar tópicos."
         trust_level_change_failed: "Houve um problema ao trocar o nível de confiança do usuário."
-        grant_admin_failed: "Houve um problema ao conceder privilégios de administração."
-        grant_moderation_failed: "Houve um problema ao conceder privilégios de moderação."
         suspend_modal_title: "Usuário Suspenso"
         trust_level_2_users: "Usuários de Nível de Confiança 2"
         trust_level_3_requirements: "Requisitos do Nível de Confiança 3"
@@ -2187,12 +2194,13 @@ pt_BR:
       title: 'Atalhos de teclado'
       jump_to:
         title: 'Ir Para'
-        home: '<b>g</b>, <b>h</b> Home (Últimos)'
+        home: '<b>g</b>, <b>h</b> Home'
         latest: '<b>g</b>, <b>l</b> Últimos'
         new: '<b>g</b>, <b>n</b> Novo'
         unread: '<b>g</b>, <b>u</b> Não Lidos'
         categories: '<b>g</b>, <b>c</b> Categorias'
         top: '<b>g</b>, <b>t</b> Topo'
+        bookmarks: '<b>g</b>, <b>b</b> Favoritos'
       navigation:
         title: 'Navegação'
         jump: '<b>#</b> Ir para a resposta #'
@@ -2314,6 +2322,15 @@ pt_BR:
         first_flag:
           name: Primeira Marcação
           description: Sinalizar uma resposta
+        promoter:
+          name: Promotor
+          description: Convidou um usuário
+        campaigner:
+          name: Veterano
+          description: Convidou 3 membros
+        champion:
+          name: Campeão
+          description: Convidou 10 membros
         first_share:
           name: Primeiro Compartilhamento
           description: Compartilhar uma resposta
