@@ -65,6 +65,9 @@ GEM
     celluloid (0.16.0)
       timers (~> 4.0.0)
     certified (1.0.0)
+    closure_tree (5.2.0)
+      activerecord (>= 3.2.0)
+      with_advisory_lock (>= 3.0.0)
     coderay (1.1.0)
     connection_pool (2.1.2)
     crass (1.0.1)
@@ -387,6 +390,9 @@ GEM
       kgio (~> 2.6)
       rack
       raindrops (~> 0.7)
+    with_advisory_lock (3.0.0)
+      activerecord (>= 3.2)
+      thread_safe
 
 PLATFORMS
   ruby
@@ -401,6 +407,7 @@ DEPENDENCIES
   better_errors
   binding_of_caller
   certified
+  closure_tree
   discourse-qunit-rails
   email_reply_parser
   ember-rails

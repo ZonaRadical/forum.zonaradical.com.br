@@ -321,7 +321,7 @@ en:
     categories:
       all: "all categories"
       all_subcategories: "all"
-      no_subcategory: "none"
+      no_subcategoy: "none"
       category: "Category"
       posts: "Posts"
       topics: "Topics"
@@ -2313,6 +2313,7 @@ en:
           backups: "Backups"
           login: "Login"
           plugins: "Plugins"
+          zr: "ZR integration"
 
       badges:
         title: Badges

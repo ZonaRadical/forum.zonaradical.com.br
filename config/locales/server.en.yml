@@ -1154,6 +1154,11 @@ en:
     approve_post_count: "The amount of posts from a new user that must be approved"
     approve_unless_trust_level: "Posts for users below this trust level must be approved"
 
+    enable_zr_integration: "Enable integration with Zona Radical"
+    zona_radical_url: 'Zona Radical site url'
+    zr_api_key: 'API key from Zona Radical secrets.yml file to access integration API'
+    enable_zr_top_menu: "Enable Zona Radical top menu"
+
     errors:
       invalid_email: "Invalid email address."
       invalid_username: "There's no user with that username."

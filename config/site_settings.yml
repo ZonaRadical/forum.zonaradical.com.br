@@ -248,6 +248,22 @@ login:
   forgot_password_strict: false
   log_out_strict: true
 
+zr:
+  enable_zr_integration:
+    default: false
+    client: true
+    refresh: false
+  zona_radical_url:
+    default: 'http://zonaradical.com.br/'
+    client: true
+  zr_api_key:
+    default: 'change_to_proper_api_key!'
+    client: true
+  enable_zr_top_menu:
+    default: false
+    client: true
+    refresh: true
+
 users:
   min_username_length:
     client: true

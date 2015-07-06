@@ -89,3 +89,21 @@ task "admin:create" => :environment do
   end
 
 end
+
+desc "Creates a forum administrator"
+task "admin:sync_zr_topmenu" => :environment do
+  require 'uri'
+  require 'digest/sha2'
+
+  url = URI.join(SiteSetting.zona_radical_url, "api/discourse_integration/top_menu")
+
+  sha256 = Digest::SHA2.new(256)
+  token = sha256.digest(SiteSetting.zr_api_key)
+
+  response = RestClient.get(url.to_s, {accept: :json, 'Authorization' => "Token token=\"#{token}\""})
+
+  json = JSON.parse(response.body) rescue nil
+
+  puts json
+
+end

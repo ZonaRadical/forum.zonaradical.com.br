@@ -27,6 +27,8 @@ end
 
 gem 'actionpack-action_caching'
 
+gem 'closure_tree'
+
 # Rails 4.1.6+ will relax the mail gem version requirement to `~> 2.5, >= 2.5.4`.
 # However, mail gem 2.6.x currently does not work with discourse because of the
 # reference to `Mail::RFC2822Parser` in `lib/email.rb`. This ensure discourse
